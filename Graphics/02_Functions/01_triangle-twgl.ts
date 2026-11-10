@@ -30,8 +30,8 @@ in vec4 v_color;
 out vec4 outColor;
 
 void main() {
-    outColor = v_color;
-    //outColor = vec4(1, 0, 1, 1);
+     outColor = v_color;
+    // outColor = vec4(1, 0, 1, 1);
 }
 `;
 
@@ -90,9 +90,9 @@ function generateData(): twgl.Arrays {
             */
             // To pass integer values, the type must be specified
             data: new Uint8Array([
-                255, 0, 0, 255,
-                0, 255, 0, 255,
-                0, 0, 255, 255,
+                255, 255, 255, 255,
+                255, 255, 0, 255,
+                0, 255, 255, 255,
             ]),
         },
     };
