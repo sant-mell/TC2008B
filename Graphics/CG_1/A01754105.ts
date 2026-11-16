@@ -1,5 +1,5 @@
 /*
- * Script to draw a 2D creeper face, and apply trasnformations to it
+ * Script to draw a 2D smiley face, and apply trasnformations to it
  *
  * Santiago Aguilar Mello
  * 2026-11-16
@@ -19,7 +19,7 @@ import vsGLSL from './vs_transforms.glsl?raw';
 import fsGLSL from './fs_color.glsl?raw';
 
 
-function creeper(size: number): twgl.Arrays {
+function smiley(size: number): twgl.Arrays {
     const positionData: number[] = [];
     const colorData: number[] = [];
     const indexData: number[] = [];
@@ -65,13 +65,11 @@ function creeper(size: number): twgl.Arrays {
  * Specifies the objects that will be used, and the UI operations available.
  */
 class RotationScene extends Scene {
-    order: string = 'scale -> translation -> rotation';
-
     constructor(gl: WebGL2RenderingContext) {
         super(gl, vsGLSL, fsGLSL);
 
         // Create the objects for this scene
-        const model = this.addObject('model', creeper(240),
+        const model = this.addObject('model', smiley(240),
             [ Math.random(), Math.random(), Math.random(), 1 ]);
         model.transforms.t.x = gl.canvas.width / 2;
         model.transforms.t.y = gl.canvas.height / 2;
@@ -108,18 +106,12 @@ class RotationScene extends Scene {
 
         // Create a composite transform matrix
         let modelTransforms: Mat3 = M3.identity();
-        for (const step of this.order.split(' -> ')) {
-            if (step === 'scale') {
-                modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
-            } else if (step === 'translation') {
-                modelTransforms = M3.multiply(translateMatrix, modelTransforms);
-            } else {
-                // Rotation around an arbitrary point
-                modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
-                modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
-                modelTransforms = M3.multiply(centerToPivot, modelTransforms);
-            }
-        }
+        modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
+        modelTransforms = M3.multiply(translateMatrix, modelTransforms);
+        // Rotation around an arbitrary point
+        modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
+        modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
+        modelTransforms = M3.multiply(centerToPivot, modelTransforms);
 
         gl.useProgram(programInfo.program);
 
@@ -155,16 +147,6 @@ class RotationScene extends Scene {
         const pivot = this.getObject('pivot');
 
         const gui = new GUI();
-
-        gui.add(this, 'order', [
-            'scale -> rotation -> translation',
-            'scale -> translation -> rotation',
-            'translation -> scale -> rotation',
-            'rotation -> translation -> scale',
-            'rotation -> scale -> translation',
-        ]).name('Order').onChange((value: string) => {
-            this.order = value;
-        });
 
         const modelFolder = gui.addFolder('Model');
 
