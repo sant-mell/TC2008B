@@ -95,15 +95,42 @@ function smiley(radius: number) : twgl.Arrays {
     // HINT: You can use polar coordinates to define the positions of vertices,
     // using the radius and an angle. Then convert them to polar coordinates.
 
-    // Sample data for a single yellow triangle. Replace with your values.
-    positionData.push(0, 100);
-    positionData.push(-120, -100);
-    positionData.push(120, -100);
-    colorData.push(0.9, 0.8, 0, 1);
-    colorData.push(0.9, 0.8, 0, 1);
-    colorData.push(0.9, 0.8, 0, 1);
+    const s = radius / 4;
 
-    indexData.push(0, 2, 1);
+    positionData.push(-3 * s, 0);
+    positionData.push(-1 * s, 0);
+    positionData.push(-1 * s, 2 * s);
+    positionData.push(-3 * s, 2 * s);
+
+    positionData.push(1 * s, 0);
+    positionData.push(3 * s, 0);
+    positionData.push(3 * s, 2 * s);
+    positionData.push(1 * s, 2 * s);
+
+    positionData.push(-1 * s, -3 * s);
+    positionData.push(1 * s, -3 * s);
+    positionData.push(1 * s, 0);
+    positionData.push(-1 * s, 0);
+
+    positionData.push(-2 * s, -4 * s);
+    positionData.push(-1 * s, -4 * s);
+    positionData.push(-1 * s, -1 * s);
+    positionData.push(-2 * s, -1 * s);
+
+    positionData.push(1 * s, -4 * s);
+    positionData.push(2 * s, -4 * s);
+    positionData.push(2 * s, -1 * s);
+    positionData.push(1 * s, -1 * s);
+
+    for (let i = 0; i < 20; i++) {
+        colorData.push(0, 0, 0, 1);
+    }
+
+    indexData.push(0, 1, 2,  0, 2, 3);
+    indexData.push(4, 5, 6,  4, 6, 7);
+    indexData.push(8, 9, 10,  8, 10, 11);
+    indexData.push(12, 13, 14,  12, 14, 15);
+    indexData.push(16, 17, 18,  16, 18, 19);
 
 
 

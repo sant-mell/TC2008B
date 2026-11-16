@@ -9,55 +9,14 @@
 
 import * as twgl from 'twgl-base.js';
 import GUI from 'lil-gui';
-import { diamond } from '../libs/shapes.js';
+import { diamond, smiley } from '../libs/shapes.js';
 import { V2, M3, type Vec2, type Mat3 } from '../libs/2d-lib.js';
 import { Scene } from '../libs/scene.js';
 import { type Color } from '../libs/color.js';
 
 // Import the shaders from external files
-import vsGLSL from './vs_transforms.glsl?raw';
-import fsGLSL from './fs_color.glsl?raw';
-
-
-function smiley(size: number): twgl.Arrays {
-    const positionData: number[] = [];
-    const colorData: number[] = [];
-    const indexData: number[] = [];
-
-    const features = [
-        [1, 2, 2, 2],
-        [5, 2, 2, 2],
-        [3, 4, 2, 3],
-        [2, 5, 1, 3],
-        [5, 5, 1, 3],
-    ];
-
-    const cell = size / 8;
-    const half = size / 2;
-
-    for (const [col, row, width, height] of features) {
-        const x0 = col * cell - half;
-        const x1 = x0 + width * cell;
-        const y1 = half - row * cell;
-        const y0 = y1 - height * cell;
-
-        const first = positionData.length / 2;
-        positionData.push(x0, y0, x1, y0, x1, y1, x0, y1);
-        for (let i = 0; i < 4; i++) {
-            colorData.push(0, 0, 0, 1);
-        }
-        indexData.push(first, first + 1, first + 2,
-                       first, first + 2, first + 3);
-    }
-
-    const arrays: twgl.Arrays = {
-        a_position: { numComponents: 2, data: positionData },
-        a_color:    { numComponents: 4, data: colorData },
-        indices:    { numComponents: 3, data: indexData },
-    };
-
-    return arrays;
-}
+import vsGLSL from './vs_matrices_vcolor.glsl?raw';
+import fsGLSL from './fs_vertex_color.glsl?raw';
 
 
 /*
@@ -65,18 +24,24 @@ function smiley(size: number): twgl.Arrays {
  * Specifies the objects that will be used, and the UI operations available.
  */
 class RotationScene extends Scene {
+
+    // Variable for the scene settings
+    settings = {
+        order: 'scale -> translation -> rotation',
+    };
+
     constructor(gl: WebGL2RenderingContext) {
         super(gl, vsGLSL, fsGLSL);
 
         // Create the objects for this scene
-        const model = this.addObject('model', smiley(240),
+        const model = this.addObject('model', smiley(150),
             [ Math.random(), Math.random(), Math.random(), 1 ]);
         model.transforms.t.x = gl.canvas.width / 2;
         model.transforms.t.y = gl.canvas.height / 2;
 
         const pivot = this.addObject('pivot', diamond(30),
             [ 0.6, 0.6, 0.6, 1]);
-        pivot.transforms.t.x = gl.canvas.width / 4;
+        pivot.transforms.t.x = gl.canvas.width / 2;
         pivot.transforms.t.y = gl.canvas.height / 2;
     }
 
@@ -106,12 +71,44 @@ class RotationScene extends Scene {
 
         // Create a composite transform matrix
         let modelTransforms: Mat3 = M3.identity();
-        modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
-        modelTransforms = M3.multiply(translateMatrix, modelTransforms);
-        // Rotation around an arbitrary point
-        modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
-        modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
-        modelTransforms = M3.multiply(centerToPivot, modelTransforms);
+        switch (this.settings.order) {
+            case 'scale -> rotation -> translation':
+                modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
+                modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
+                modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(centerToPivot, modelTransforms);
+                modelTransforms = M3.multiply(translateMatrix, modelTransforms);
+                break;
+            case 'scale -> translation -> rotation':
+                modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
+                modelTransforms = M3.multiply(translateMatrix, modelTransforms);
+                // Rotation around an arbitrary point
+                modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
+                modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(centerToPivot, modelTransforms);
+                break;
+            case 'translation -> scale -> rotation':
+                modelTransforms = M3.multiply(translateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
+                modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
+                modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(centerToPivot, modelTransforms);
+                break;
+            case 'rotation -> translation -> scale':
+                modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
+                modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(centerToPivot, modelTransforms);
+                modelTransforms = M3.multiply(translateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
+                break;
+            case 'rotation -> scale -> translation':
+                modelTransforms = M3.multiply(pivotToCenter, modelTransforms);
+                modelTransforms = M3.multiply(rotateMatrix, modelTransforms);
+                modelTransforms = M3.multiply(centerToPivot, modelTransforms);
+                modelTransforms = M3.multiply(scaleMatrix, modelTransforms);
+                modelTransforms = M3.multiply(translateMatrix, modelTransforms);
+                break;
+        }
 
         gl.useProgram(programInfo.program);
 
@@ -147,6 +144,15 @@ class RotationScene extends Scene {
         const pivot = this.getObject('pivot');
 
         const gui = new GUI();
+
+        // Selector for the order of the transformations
+        gui.add(this.settings, 'order', [
+            'scale -> rotation -> translation',
+            'scale -> translation -> rotation',
+            'translation -> scale -> rotation',
+            'rotation -> translation -> scale',
+            'rotation -> scale -> translation',
+        ]);
 
         const modelFolder = gui.addFolder('Model');
 
