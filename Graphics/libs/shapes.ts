@@ -126,11 +126,11 @@ function smiley(radius: number) : twgl.Arrays {
         colorData.push(0, 0, 0, 1);
     }
 
-    indexData.push(0, 1, 2,  0, 2, 3);
-    indexData.push(4, 5, 6,  4, 6, 7);
-    indexData.push(8, 9, 10,  8, 10, 11);
-    indexData.push(12, 13, 14,  12, 14, 15);
-    indexData.push(16, 17, 18,  16, 18, 19);
+    indexData.push(0, 1, 2,  2, 3, 0);
+    indexData.push(4, 5, 6,  6, 7, 4);
+    indexData.push(8, 9, 10,  10, 11, 8);
+    indexData.push(12, 13, 14,  14, 15, 12);
+    indexData.push(16, 17, 18,  18, 19, 16);
 
 
 
