@@ -62,9 +62,10 @@ class RotationScene extends Scene {
 
 
         // Transform matrices for the model
-        // TODO: Create the matrices necessary
+        // TODO: Create the matrices neccesary
+                
 
-
+        
 
         // Create a composite transform matrix
         let modelTransforms: Mat3 = M3.identity();
