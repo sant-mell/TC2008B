@@ -11,6 +11,7 @@ uniform mat4 u_world;
 uniform mat4 u_worldInverseTransform;
 uniform mat4 u_worldViewProjection;
 
+// Transformed normals
 out vec3 v_normal;
 out vec3 v_surfaceToLight;
 out vec3 v_surfaceToView;
@@ -19,15 +20,15 @@ void main() {
     // Transform the position of the vertices
     gl_Position = u_worldViewProjection * a_position;
 
-    // TODO 1: Send the normal transformed by the object's own
-    //         transformations (rotation, scale, ...). The untransformed
-    //         normal below is only a placeholder so the page still renders.
-    v_normal = a_normal;  // PLACEHOLDER: replace me
+    // Transform the normal vector along with the object
+    v_normal = mat3(u_worldInverseTransform) * a_normal;
 
-    // TODO 2: Send the direction pointing from this point of the
-    //         surface toward the light.
-    // TODO 3: Send the direction pointing from this point of the
-    //         surface toward the view (camera).
-    v_surfaceToLight = u_lightWorldPosition;  // PLACEHOLDER: replace me
-    v_surfaceToView = u_viewWorldPosition;    // PLACEHOLDER: replace me
+    // Get world position of the surface
+    vec3 surfaceWorldPosition = (u_world * a_position).xyz;
+
+    // Direction from the surface to the light
+    v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
+
+    // Direction from the surface to the view
+    v_surfaceToView = u_viewWorldPosition - surfaceWorldPosition;
 }

@@ -1,11 +1,5 @@
 /*
  * Activity: Implementing the Phong lighting model.
- *
- * SCAFFOLDING -- the scene, cube, camera, light and GUI are already done.
- * Your work is in this file and in the GLSL files (see README.md for the
- * parts and hints):
- *      - vs_phong_activity.glsl
- *      - fs_phong_activity.glsl
  */
 
 
@@ -21,7 +15,7 @@ import { Camera3D } from '../../libs/camera3d.ts';
 import { Light3D } from '../../libs/light3d.ts';
 import { cubeFaceColors } from '../../libs/shapes.ts';
 
-// Define the shader code, using GLSL 3.00 -- THIS is where you work
+// Define the shader code, using GLSL 3.00
 import vsGLSL from './vs_phong_activity.glsl?raw';
 import fsGLSL from './fs_phong_activity.glsl?raw';
 
@@ -35,10 +29,6 @@ class PhongActivityScene extends Scene {
             y: 10,
             z: 10,
         },
-        repeat: {
-            rows: 1,
-            cols: 1,
-        }
     };
 
     // Duration of the animation in milliseconds
@@ -47,40 +37,17 @@ class PhongActivityScene extends Scene {
     lights: Light3D[] = [];
     object: Object3D;
 
-    // Baseline colors of the light, so the GUI intensity slider can
-    // scale them without losing the original hue/saturation.
-    private lightBase = {
-        ambient:  [1, 1, 1, 1],
-        diffuse:  [1, 1, 1, 1],
-        specular: [1, 1, 1, 1],
-    };
-
-    // Multiplier applied to the three light colors by the GUI slider.
-    lightIntensity = 1.0;
-
-    /**
-     * Rescale the three light colors from the baseline colors using
-     * the current lightIntensity. Colors are vec4 arrays.
-     */
-    private applyLightIntensity(): void {
-        const i = this.lightIntensity;
-        (['ambient', 'diffuse', 'specular'] as const).forEach((term) => {
-            const base = this.lightBase[term];
-            this.lights[0][term] = [base[0] * i, base[1] * i, base[2] * i, 1.0];
-        });
-    }
-
     constructor(gl: WebGL2RenderingContext) {
         super(gl, vsGLSL, fsGLSL);
 
         // Configure the camera for this scene
         this.camera = new Camera3D(
             0,              // ID
-            10,             // Distance to target (cube is at the origin)
+            10,             // Distance to target
             0,              // Azimut
             0,              // Elevation
-            [0, 0, 0],      // Position (ignored: position comes from the spherical params)
-            [0, 0, 0]);     // Target
+            [0, 0, 0],
+            [0, 0, 0]);
         // Make the camera respond to keyboard events
         this.camera.setupControls();
 
@@ -97,9 +64,10 @@ class PhongActivityScene extends Scene {
     }
 
     drawObject(object: Object3D, viewProjectionMatrix: Mat4): void {
+        // Get the WebGL context and program info
         const { gl, programInfo } = this;
 
-        // Prepare the vectors for translation and scale
+        // Prepare the vector for translation and scale
         let v3_tra: Vec3 = object.posArray;
         let v3_sca: Vec3 = object.scaArray;
 
@@ -125,19 +93,17 @@ class PhongActivityScene extends Scene {
         // The matrix to be used for normal transformations
         const normalMat = M4.transpose(M4.inverse(transforms));
 
-        // Send the model uniforms to the shader so that the
-        // rotation/scale/translation computed above actually take effect.
-        const uniforms: { [key: string]: unknown } = {
+        let uniforms = {
             u_world: transforms,
-            u_worldInverseTransform: normalMat,
             u_worldViewProjection: wvpMat,
+            u_worldInverseTransform: normalMat,
             u_ambientColor: object.color,
             u_diffuseColor: object.color,
             u_specularColor: object.color,
             u_shininess: object.shininess,
-        };
-        twgl.setUniforms(programInfo, uniforms);
+        }
 
+        twgl.setUniforms(programInfo, uniforms);
         gl.bindVertexArray(object.vao);
         twgl.drawBufferInfo(gl, object.bufferInfo);
     }
@@ -146,9 +112,8 @@ class PhongActivityScene extends Scene {
     render(deltaTime: number): void {
         const { gl, programInfo } = this;
 
-        // Clear the canvas with a carbon-gray background so that the
-        // (still black) placeholder cube is visible before any work is done
-        gl.clearColor(0.16, 0.16, 0.16, 1.0);
+        // Clear the canvas
+        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // Tell webgl to cull faces
@@ -157,13 +122,15 @@ class PhongActivityScene extends Scene {
 
         gl.useProgram(programInfo.program);
 
-        // TODO: UNIFORMS (scene) -- send to the shader the data that
-        // describes the scene and is shared by every object: the light
-        // (position and the three colors) and the view position
-        // (this.camera). All of it lives in this.lights[0] and
-        // this.camera (see Light3D and Camera3D in ../../libs).
-        //
-        // twgl.setUniforms(programInfo, { /* ... */ });
+        // Scene uniforms
+        const globalUniforms = {
+            u_lightWorldPosition: this.lights[0].posArray,
+            u_viewWorldPosition: this.camera.posArray,
+            u_ambientLight: this.lights[0].ambient,
+            u_diffuseLight: this.lights[0].diffuse,
+            u_specularLight: this.lights[0].specular,
+        }
+        twgl.setUniforms(programInfo, globalUniforms);
 
         // Check for camera keys and update the camera position
         this.camera.checkKeys();
@@ -178,9 +145,6 @@ class PhongActivityScene extends Scene {
         object: Object3D,
         deltaTime: number
     ): void {
-        // Draw the object multiple times
-        const distance = 3;
-
         // Calculate the fraction of the duration that has passed
         const fract = deltaTime / this.duration;
 
@@ -198,53 +162,29 @@ class PhongActivityScene extends Scene {
     // Setup UI controls to inspect the lighting
     setupUI() {
         const gui = new GUI();
-        const model = this.getObject('cube');
 
         const animFolder = gui.addFolder('Animation:')
         animFolder.add( this.settings.rotationSpeed, 'x', 0, 360).decimals(2)
         animFolder.add( this.settings.rotationSpeed, 'y', 0, 360).decimals(2)
         animFolder.add( this.settings.rotationSpeed, 'z', 0, 360).decimals(2)
+        animFolder.close();
 
         const modelFolder = gui.addFolder('Model material')
         modelFolder.addColor( this.object, 'color')
-        modelFolder.add( this.object, 'shininess', 1, 200, 1).name('Shininess')
+        modelFolder.add( this.object, 'shininess', 1, 200, 1)
 
         // Settings for the light
         const lightFolder = gui.addFolder('Light:')
         lightFolder.add( this.lights[0].position, 'x', -20, 20)
-            .name('Position X').decimals(2)
+            .decimals(2)
         lightFolder.add( this.lights[0].position, 'y', -20, 20)
-            .name('Position Y').decimals(2)
+            .decimals(2)
         lightFolder.add( this.lights[0].position, 'z', -20, 20)
-            .name('Position Z').decimals(2)
-
-        // Capture the initial light colors as the baseline for the
-        // intensity scaling (see applyLightIntensity)
-        this.lightBase.ambient  = [ ...this.lights[0].ambient ];
-        this.lightBase.diffuse  = [ ...this.lights[0].diffuse ];
-        this.lightBase.specular = [ ...this.lights[0].specular ];
+            .decimals(2)
 
         lightFolder.addColor(this.lights[0], 'ambient')
-            .onChange(() => {
-                this.lightBase.ambient = [ ...this.lights[0].ambient ];
-                this.applyLightIntensity();
-            })
         lightFolder.addColor(this.lights[0], 'diffuse')
-            .onChange(() => {
-                this.lightBase.diffuse = [ ...this.lights[0].diffuse ];
-                this.applyLightIntensity();
-            })
         lightFolder.addColor(this.lights[0], 'specular')
-            .onChange(() => {
-                this.lightBase.specular = [ ...this.lights[0].specular ];
-                this.applyLightIntensity();
-            })
-
-        lightFolder.add( this, 'lightIntensity', 0, 2, 0.05 )
-            .name('Intensity')
-            .onChange( () => this.applyLightIntensity() )
-
-        animFolder.close();
     }
 }
 
